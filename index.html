@@ -1,0 +1,570 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Music Tagger</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Malayalam:wght@400;500;600&family=Inter:wght@400;500;600;650&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/browser-id3-writer@4.4.0/dist/browser-id3-writer.min.js"></script>
+<style>
+:root{--bg:#f5f6fb;--surface:#ffffff;--surface2:#eff1f8;--line:#e1e4ef;--ink:#13162b;--mute:#636a87;--accent:#5b4bff;--accent2:#06b6d4;--on:#fff;--ok:#059669;--warn:#b45309;--bad:#dc2626;--shadow:0 1px 2px #1a1f4012,0 8px 30px #1a1f4010;--r:16px}
+@media (prefers-color-scheme:dark){:root{--bg:#090a10;--surface:#12141d;--surface2:#1a1d29;--line:#262a3a;--ink:#eceef6;--mute:#8d93ab;--accent:#8478ff;--accent2:#22d3ee;--on:#0b0b16;--ok:#34d399;--warn:#fbbf24;--bad:#f87171;--shadow:0 1px 2px #0008,0 10px 40px #0006}}
+*{box-sizing:border-box}
+html,body{margin:0;min-height:100%}
+body{background:radial-gradient(900px 480px at 90% -12%,color-mix(in srgb,var(--accent) 16%,transparent),transparent),radial-gradient(700px 420px at -8% 112%,color-mix(in srgb,var(--accent2) 11%,transparent),transparent),var(--bg);color:var(--ink);font:14px/1.5 Inter,"Noto Sans Malayalam",system-ui,sans-serif;color-scheme:light dark;padding-bottom:120px;-webkit-font-smoothing:antialiased}
+button,input{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.wrap{max-width:1360px;margin:0 auto;padding:0 28px}
+header{padding:30px 0 22px;display:flex;align-items:center;gap:14px}
+.logo{width:44px;height:44px;border-radius:13px;display:grid;place-items:center;background:linear-gradient(135deg,var(--accent),var(--accent2));box-shadow:0 8px 24px color-mix(in srgb,var(--accent) 40%,transparent)}
+.logo svg{width:22px;height:22px;fill:#fff}
+h1{font:650 22px/1.15 Inter,"Noto Sans Malayalam",sans-serif;margin:0;letter-spacing:-.02em}
+.sub{color:var(--mute);margin:3px 0 0}
+.btn{border:1px solid var(--line);background:var(--surface);padding:9px 15px;border-radius:11px;cursor:pointer;display:inline-flex;align-items:center;gap:8px;font-weight:550;box-shadow:var(--shadow);transition:transform .12s,border-color .15s,background .15s}
+.btn:hover:not(:disabled){border-color:var(--accent);transform:translateY(-1px)}
+.btn:disabled{opacity:.45;cursor:not-allowed;box-shadow:none}
+.btn.sm{padding:5px 12px;font-size:13px;box-shadow:none;margin-left:6px}
+.btn.pri{background:linear-gradient(135deg,var(--accent),color-mix(in srgb,var(--accent) 60%,var(--accent2)));color:#fff;border-color:transparent}
+@media (prefers-color-scheme:dark){.btn.pri{color:#0b0b16}}
+.btn svg{width:15px;height:15px;fill:currentColor}
+.drop{border:1.5px dashed var(--line);border-radius:20px;padding:64px 24px;text-align:center;background:var(--surface);cursor:pointer;box-shadow:var(--shadow);transition:.18s}
+.drop:hover,.drop.over{border-color:var(--accent);background:color-mix(in srgb,var(--accent) 6%,var(--surface))}
+.drop h2{margin:0 0 6px;font-size:20px;letter-spacing:-.01em}
+.drop p{margin:0 0 20px;color:var(--mute)}
+.note{margin:0 0 16px;padding:11px 15px;border-radius:12px;background:color-mix(in srgb,var(--warn) 12%,var(--surface));border:1px solid color-mix(in srgb,var(--warn) 40%,transparent);color:var(--warn);font-size:13px}
+.bar{display:flex;flex-wrap:wrap;gap:14px 20px;align-items:center;justify-content:space-between;margin:0 0 16px}
+.stats{display:flex;gap:10px;flex-wrap:wrap}
+.stat{background:var(--surface);border:1px solid var(--line);border-radius:13px;padding:9px 16px;min-width:92px;box-shadow:var(--shadow)}
+.stat{cursor:pointer;text-align:left;transition:border-color .15s,box-shadow .15s}
+.stat:hover{border-color:var(--accent)}
+.stat[aria-pressed=true]{border-color:var(--accent);box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 20%,transparent)}
+.empty{padding:50px 20px;text-align:center;color:var(--mute)}
+.empty[hidden]{display:none}
+.stat b{display:block;font:650 21px/1.1 Inter,sans-serif;font-variant-numeric:tabular-nums;letter-spacing:-.02em}
+.stat span{color:var(--mute);font-size:12px}
+.acts{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.folder{color:var(--mute);font-size:13px;flex:1;min-width:140px}
+.folder b{color:var(--ink);font-weight:550}
+.yr{display:flex;align-items:center;gap:8px;color:var(--mute);font-size:13px}
+.yr input[type=text]{width:78px;background:var(--surface);border:1px solid var(--line);border-radius:11px;padding:9px 11px;text-align:center}
+.yr input[type=text]:focus{border-color:var(--accent);outline:none}
+.yr select{background:var(--surface);border:1px solid var(--line);border-radius:11px;padding:9px 11px}
+#yearHint{width:150px}
+input[type=checkbox]{accent-color:var(--accent);width:15px;height:15px}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);overflow:hidden;box-shadow:var(--shadow)}
+.scroll{overflow:auto;max-height:calc(100vh - 300px);min-height:260px}
+table{border-collapse:separate;border-spacing:0;width:100%;min-width:1170px}
+th{position:sticky;top:0;background:color-mix(in srgb,var(--surface2) 92%,transparent);backdrop-filter:blur(8px);text-align:left;font-weight:600;color:var(--mute);font-size:11.5px;text-transform:uppercase;letter-spacing:.05em;padding:12px 8px;border-bottom:1px solid var(--line);z-index:1}
+td{padding:7px 8px;border-bottom:1px solid color-mix(in srgb,var(--line) 60%,transparent);vertical-align:middle}
+tr:hover td{background:color-mix(in srgb,var(--accent) 4%,transparent)}
+td input[type=text]{width:100%;background:transparent;border:1px solid transparent;border-radius:9px;padding:7px 9px;min-width:110px}
+td input[type=text]:hover{border-color:var(--line)}
+td input[type=text]:focus{border-color:var(--accent);background:var(--bg);outline:none;box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 18%,transparent)}
+.cov{width:44px;height:44px;border-radius:10px;object-fit:cover;display:block;background:var(--surface2);border:1px solid var(--line);color:var(--mute)}
+.fn{font-size:12px;color:var(--mute);max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.badge{display:inline-block;padding:3px 11px;border-radius:99px;font-size:12px;font-weight:550;white-space:nowrap;border:1px solid var(--line);color:var(--mute);background:var(--surface2)}
+.badge.matched{color:var(--ok);border-color:color-mix(in srgb,var(--ok) 35%,transparent);background:color-mix(in srgb,var(--ok) 11%,transparent)}
+.badge.written{color:#fff;background:var(--ok);border-color:var(--ok)}
+.badge.notfound,.badge.error{color:var(--bad);border-color:color-mix(in srgb,var(--bad) 35%,transparent);background:color-mix(in srgb,var(--bad) 10%,transparent)}
+.badge.searching,.badge.writing{color:var(--accent);border-color:color-mix(in srgb,var(--accent) 40%,transparent);background:color-mix(in srgb,var(--accent) 10%,transparent)}
+.badge.skipped{color:var(--warn);background:color-mix(in srgb,var(--warn) 10%,transparent)}
+.ic{background:none;border:0;color:var(--mute);cursor:pointer;padding:7px;border-radius:9px}
+.ic:hover{color:var(--accent);background:var(--surface2)}
+.ic.on{color:var(--accent)}
+.player{display:flex;align-items:center;gap:16px;background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:10px 16px;margin:0 0 14px;box-shadow:var(--shadow)}
+.player[hidden]{display:none}
+.player>div{min-width:0;flex:0 1 340px}
+.player b{display:block;font-weight:550;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.player span{color:var(--mute);font-size:12px}
+.player audio{flex:1;min-width:200px;height:36px}
+.ic svg{width:16px;height:16px;fill:currentColor;display:block}
+.dock{position:fixed;left:50%;bottom:24px;transform:translate(-50%,0);width:min(700px,calc(100% - 32px));background:color-mix(in srgb,var(--surface) 88%,transparent);border:1px solid var(--line);border-radius:18px;padding:14px 16px;box-shadow:0 20px 60px #0004;backdrop-filter:blur(14px);z-index:20;display:none}
+.dock.on{display:block;animation:up .25s ease}
+@keyframes up{from{transform:translate(-50%,16px);opacity:0}}
+.dr{display:flex;align-items:center;gap:12px}
+.dt{flex:1;min-width:0}
+.dt b{display:block;font-weight:550;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.dt span{color:var(--mute);font-size:12px}
+.track{height:5px;border-radius:3px;background:var(--surface2);margin-top:12px;overflow:hidden}
+.fill{height:100%;width:0;background:linear-gradient(90deg,var(--accent),var(--accent2));transition:width .2s;border-radius:3px}
+.toast{position:fixed;top:20px;right:20px;background:var(--ink);color:var(--bg);padding:11px 16px;border-radius:12px;z-index:30;display:none;max-width:360px;box-shadow:var(--shadow)}
+.toast.on{display:block}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="logo" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M9 3v12.3A3.5 3.5 0 107 18.5V8h8V3z"/><path d="M17 11v6.3a3 3 0 101.8 2.7V13h2v-2z" opacity=".7"/></svg></div>
+    <div>
+      <h1>Music Tagger</h1>
+      <p class="sub">Look up songs on MusicBrainz and write the tags straight back into your folder.</p>
+    </div>
+  </header>
+
+  <div id="note" class="note" hidden></div>
+
+  <div class="drop" id="drop" tabindex="0" role="button" aria-label="Choose music folder">
+    <h2>Choose your music folder</h2>
+    <p>Drop a folder here, or pick one. Only music files are loaded, and MP3 tags are written back to the original files.</p>
+    <span class="btn pri">Choose folder</span>
+  </div>
+  <input type="file" id="fallback" webkitdirectory multiple hidden>
+
+  <section id="main" hidden>
+    <div class="bar">
+      <div class="stats">
+        <button class="stat" data-f="all" aria-pressed="true"><b id="sT">0</b><span>Tracks</span></button>
+        <button class="stat" data-f="matched" aria-pressed="false"><b id="sM">0</b><span>Matched</span></button>
+        <button class="stat" data-f="written" aria-pressed="false"><b id="sW">0</b><span>Written</span></button>
+        <button class="stat" data-f="attention" aria-pressed="false"><b id="sF">0</b><span>Need attention</span></button>
+      </div>
+      <div class="folder"><span id="folderName"></span> <button class="btn sm" id="bRescan" title="Re-read the current folder: picks up new and removed files and keeps your matches">Rescan</button> <button class="btn sm" id="bChange">Change folder</button></div>
+      <div class="acts">
+        <label class="yr" title="Only accept releases from this year, or from a range such as 1995-2000. Leave empty for any year.">Album year <input type="text" id="yearHint" maxlength="9" placeholder="1998 or 1995-2000"></label>
+        <label class="yr" title="First 3 letters of the language code, e.g. mal for Malayalam. Preferred when available, not required.">Language <input type="text" id="langHint" maxlength="3" placeholder="Any"></label>
+        <label class="yr" title="How closely a result's title must resemble the file name. Results below this are rejected.">Title match <select id="strict"><option value="0.8">Strict</option><option value="0.6" selected>Normal</option><option value="0.4">Loose</option></select></label>
+        <label class="yr"><input type="checkbox" id="redo"> Include matched</label>
+        <button class="btn" id="bFind"><svg viewBox="0 0 24 24"><path d="M10 2a8 8 0 016.3 12.9l5.4 5.4-1.4 1.4-5.4-5.4A8 8 0 1110 2zm0 2a6 6 0 100 12 6 6 0 000-12z"/></svg>Find metadata</button>
+        <button class="btn" id="bRetry" hidden><svg viewBox="0 0 24 24"><path d="M12 5V2l5 4-5 4V7a6 6 0 106 6h2a8 8 0 11-8-8z"/></svg>Retry failed (<span id="nFail">0</span>)</button>
+        <button class="btn pri" id="bWrite"><svg viewBox="0 0 24 24"><path d="M5 3h11l4 4v14H5zm2 2v14h11V8h-3V5zm3 9h5v5h-5z"/></svg>Write tags to folder (<span id="wN">0</span>)</button>
+      </div>
+    </div>
+    <div class="player" id="player" hidden>
+      <div><b id="plTitle"></b><span id="plSub"></span></div>
+      <audio id="aud" controls></audio>
+    </div>
+    <div class="card"><div class="scroll">
+      <table>
+        <thead><tr>
+          <th style="width:36px"><input type="checkbox" id="all" aria-label="Select all"></th>
+          <th style="width:44px"></th>
+          <th style="width:58px">Cover</th><th>File</th><th>Title</th><th>Artist</th><th>Album / Movie</th>
+          <th style="width:80px">Year</th><th>Composer</th><th>Lyricist</th><th style="width:150px">Status</th><th style="width:44px"></th>
+        </tr></thead>
+        <tbody id="rows"></tbody>
+      </table>
+    </div><div class="empty" id="none" hidden>No tracks match this filter.</div></div>
+  </section>
+</div>
+
+<div class="dock" id="dock" role="status">
+  <div class="dr">
+    <div class="dt"><b id="dTitle">Working…</b><span id="dSub"></span></div>
+    <button class="btn" id="bPause"></button>
+    <button class="btn" id="bStop"><svg viewBox="0 0 24 24"><path d="M6 6h12v12H6z"/></svg>Stop</button>
+  </div>
+  <div class="track"><div class="fill" id="fill"></div></div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+const $=id=>document.getElementById(id);
+const EXT=/\.(mp3|flac|m4a|m4b|aac|wav|ogg|oga|opus|wma|aiff?|ape|alac|wv)$/i;
+const isMusic=n=>EXT.test(n)&&!n.startsWith('.');
+const ICON={pause:'<svg viewBox="0 0 24 24"><path d="M6 5h4v14H6zm8 0h4v14h-4z"/></svg>',play:'<svg viewBox="0 0 24 24"><path d="M7 4l13 8-13 8z"/></svg>',redo:'<svg viewBox="0 0 24 24"><path d="M12 5V2l5 4-5 4V7a6 6 0 106 6h2a8 8 0 11-8-8z"/></svg>',note:'<svg viewBox="0 0 24 24"><path d="M9 3v12.3A3.5 3.5 0 107 18.5V8h8V3z" fill="currentColor"/></svg>'};
+const LABEL={pending:'Pending',searching:'Searching',matched:'Matched',notfound:'Not found',writing:'Writing',written:'Written',error:'Error',skipped:'Skipped'};
+const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+const esc=s=>String(s??'').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+
+let files=[], rootHandle=null, run={active:false,paused:false,stop:false,ctrl:null};
+const canWrite='showDirectoryPicker' in window;
+if(!canWrite){const n=$('note');n.hidden=false;n.textContent='This browser cannot write into folders. Use Chrome or Edge to tag files in place; here, tagged copies will download instead.';}
+
+/* ---------- Folder loading ---------- */
+let skipped=0, seq=0;
+async function walk(dir,out,path=''){
+  for await(const [name,h] of dir.entries()){
+    if(h.kind==='directory'){ if(!name.startsWith('.')) await walk(h,out,path+name+'/'); }
+    else if(isMusic(name)) out.push({handle:h,name,path});
+    else if(!name.startsWith('.')) skipped++;
+  }
+}
+const sortList=l=>l.sort((a,b)=>(a.path+a.name).localeCompare(b.path+b.name,undefined,{numeric:true}));
+async function pickFolder(){
+  if(!canWrite) return $('fallback').click();
+  if(files.some(f=>f.status==='matched')&&!confirm('Loading another folder discards matches that have not been written yet. Continue?')) return;
+  try{
+    const dir=await showDirectoryPicker({mode:'readwrite'});
+    await loadDir(dir);
+  }catch(e){ if(e.name!=='AbortError') toast(e.message); }
+}
+async function loadDir(dir){
+  skipped=0; const out=[]; await walk(dir,out); rootHandle=dir;
+  setFiles(sortList(out),dir.name);
+}
+function makeItem(f){
+  return {
+    id:'f'+(seq++),handle:f.handle||null,file:f.file||null,name:f.name,path:f.path||'',
+    ext:f.name.split('.').pop().toLowerCase(),sel:true,status:'pending',
+    query:clean(f.name),title:clean(f.name),artist:'',album:'',year:'',composer:'',lyricist:'',coverBuf:null,coverUrl:'',msg:''
+  };
+}
+function dropItem(f){
+  if(f.coverUrl) URL.revokeObjectURL(f.coverUrl);
+  if(playId===f.id){aud.pause();aud.removeAttribute('src');playId=null;$('player').hidden=true;}
+}
+function setFiles(list,folder){
+  const other=skipped?`, ignored ${skipped} other file${skipped===1?'':'s'}`:'';
+  if(!list.length) return toast('No music files found in that folder'+other+'.');
+  files.forEach(dropItem);
+  files=list.map(makeItem);
+  $('folderName').innerHTML='Folder: <b>'+esc(folder)+'</b>';
+  $('main').hidden=false; $('drop').hidden=true;
+  filter='all'; build(); applyFilter();
+  toast(`Loaded ${files.length} music file${files.length===1?'':'s'}${other}.`);
+}
+// Re-read the current folder: keep matches and edits for files that are still there.
+async function rescan(){
+  if(!rootHandle){ toast('Choose the folder again to rescan it.'); return pickFolder(); }
+  try{
+    if(await rootHandle.requestPermission({mode:'readwrite'})!=='granted') return toast('Write permission was not granted.');
+    skipped=0; const out=[]; await walk(rootHandle,out);
+    const old=new Map(files.map(f=>[f.path+f.name,f])), seen=new Set(); let added=0;
+    const next=sortList(out).map(n=>{
+      const k=n.path+n.name; seen.add(k);
+      const o=old.get(k); if(o){o.handle=n.handle;return o;}
+      added++; return makeItem(n);
+    });
+    const gone=files.filter(f=>!seen.has(f.path+f.name));
+    gone.forEach(dropItem);
+    files=next; build(); applyFilter();
+    toast(`Rescanned: ${added} new, ${gone.length} removed, ${next.length-added} unchanged.`);
+  }catch(e){ toast('Rescan failed: '+e.message); }
+}
+function clean(n){
+  return n.replace(/\.[^.]+$/,'').replace(/^\d+[\s.\-_]*/,'').replace(/\[.*?\]|\(.*?\)/g,'').replace(/[-_]+/g,' ').replace(/\s+/g,' ').trim();
+}
+$('drop').onclick=pickFolder;
+$('drop').onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();pickFolder();}};
+$('fallback').onchange=e=>{
+  const all=[...e.target.files];
+  const list=sortList(all.filter(f=>isMusic(f.name)).map(f=>({file:f,name:f.name,path:f.webkitRelativePath.slice(0,-f.name.length)})));
+  skipped=all.filter(f=>!isMusic(f.name)&&!f.name.startsWith('.')).length; rootHandle=null;
+  setFiles(list,(all[0]?.webkitRelativePath||'').split('/')[0]||'Selected folder');
+  e.target.value='';
+};
+['dragenter','dragover'].forEach(t=>$('drop').addEventListener(t,e=>{e.preventDefault();$('drop').classList.add('over');}));
+['dragleave','drop'].forEach(t=>$('drop').addEventListener(t,e=>{e.preventDefault();$('drop').classList.remove('over');}));
+$('drop').addEventListener('drop',async e=>{
+  const it=e.dataTransfer.items[0];
+  if(it&&it.getAsFileSystemHandle){
+    const h=await it.getAsFileSystemHandle();
+    if(h&&h.kind==='directory'){
+      if(await h.requestPermission({mode:'readwrite'})!=='granted') return toast('Write permission was not granted.');
+      return loadDir(h);
+    }
+  }
+  toast('Drop a folder, or use Choose folder.');
+});
+
+/* ---------- Table ---------- */
+let filter='all';
+const FILTERS={all:()=>true,matched:f=>f.status==='matched',written:f=>f.status==='written',attention:f=>['notfound','error','skipped'].includes(f.status)};
+const visible=f=>FILTERS[filter](f);
+const writable=f=>f.sel&&visible(f)&&f.status==='matched';
+document.querySelectorAll('.stat').forEach(b=>b.onclick=()=>{filter=b.dataset.f;applyFilter();});
+function applyFilter(){
+  document.querySelectorAll('.stat').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.f===filter)));
+  files.forEach(f=>{const tr=$('r-'+f.id);if(tr)tr.hidden=!visible(f);});
+  stats();
+}
+function rowHtml(f){
+  const cov=f.coverUrl?`<img class="cov" src="${f.coverUrl}" alt="">`:`<div class="cov" style="display:grid;place-items:center">${ICON.note}</div>`;
+  const inp=(k,ph)=>`<td><input type="text" value="${esc(f[k])}" placeholder="${ph}" oninput="edit('${f.id}','${k}',this.value)"></td>`;
+  return `<td><input type="checkbox" ${f.sel?'checked':''} onchange="pick('${f.id}',this.checked)" aria-label="Select"></td>
+  <td><button class="ic pl${isPlaying(f.id)?' on':''}" data-id="${f.id}" title="Play to check this is the right song" aria-label="Play" onclick="play('${f.id}')">${isPlaying(f.id)?ICON.pause:ICON.play}</button></td>
+  <td>${cov}</td><td class="fn" title="${esc(f.path+f.name)}">${esc(f.name)}</td>
+  ${inp('title','Title')}${inp('artist','Singers')}${inp('album','Movie / album')}${inp('year','YYYY')}${inp('composer','Music director')}${inp('lyricist','Lyricist')}
+  <td><span class="badge ${f.status}" title="${esc(f.msg)}">${f.status==='matched'&&f.noCredits?'Matched, no credits':LABEL[f.status]}</span></td>
+  <td><button class="ic" title="Search again using the title" onclick="one('${f.id}')">${ICON.redo}</button></td>`;
+}
+function build(){
+  $('rows').innerHTML='';
+  files.forEach(f=>{const tr=document.createElement('tr');tr.id='r-'+f.id;tr.innerHTML=rowHtml(f);tr.hidden=!visible(f);$('rows').appendChild(tr);});
+}
+function refresh(f){const tr=$('r-'+f.id);if(tr){tr.innerHTML=rowHtml(f);tr.hidden=!visible(f);}stats();}
+function stats(){
+  $('sT').textContent=files.length;
+  $('sM').textContent=files.filter(f=>f.status==='matched').length;
+  $('sW').textContent=files.filter(f=>f.status==='written').length;
+  $('sF').textContent=files.filter(f=>['notfound','error','skipped'].includes(f.status)).length;
+  $('wN').textContent=files.filter(writable).length;
+  const nf=files.filter(f=>['error','notfound'].includes(f.status)).length;
+  $('nFail').textContent=nf; $('bRetry').hidden=nf===0;
+  const vis=files.filter(visible);
+  $('all').checked=vis.length>0&&vis.every(f=>f.sel);
+  $('none').hidden=files.length===0||vis.length>0;
+}
+const byId=id=>files.find(f=>f.id===id);
+window.edit=(id,k,v)=>{
+  const f=byId(id); f[k]=v;
+  if(k==='year') f.yearHint=parseYears(v)?v.trim():'';
+  if(f.status==='written'){   // edited after writing: make it writable again
+    f.status='matched';
+    const b=document.querySelector('#r-'+id+' .badge'); if(b){b.className='badge matched';b.textContent='Matched';}
+    stats();
+  }
+};
+window.pick=(id,v)=>{byId(id).sel=v;stats();};
+$('all').onchange=e=>{files.filter(visible).forEach(f=>f.sel=e.target.checked);build();stats();};
+
+/* ---------- MusicBrainz ---------- */
+let lastMB=0;
+const sleepA=(ms,sig)=>new Promise((res,rej)=>{
+  const t=setTimeout(res,ms);
+  sig?.addEventListener('abort',()=>{clearTimeout(t);rej(new DOMException('Stopped','AbortError'));},{once:true});
+});
+async function mb(path,signal){
+  const url='https://musicbrainz.org/ws/2/'+path+(path.includes('?')?'&':'?')+'fmt=json';
+  for(let attempt=0;;attempt++){
+    const wait=1100-(Date.now()-lastMB); if(wait>0) await sleepA(wait,signal);
+    lastMB=Date.now();
+    try{
+      const sig=(AbortSignal.any&&AbortSignal.timeout)?AbortSignal.any([signal,AbortSignal.timeout(20000)]):signal;
+      const r=await fetch(url,{signal:sig});
+      if(r.ok) return await r.json();
+      if(r.status!==503&&r.status!==429) throw Object.assign(new Error('MusicBrainz returned '+r.status),{fatal:true});
+      throw new Error('MusicBrainz is busy (rate limit).');
+    }catch(e){
+      if(signal?.aborted) throw new DOMException('Stopped','AbortError');
+      if(e.fatal) throw e;
+      if(attempt>=3) throw new Error(e.message.startsWith('MusicBrainz')?e.message:'Could not reach MusicBrainz. Check your connection.');
+      $('dSub').textContent='MusicBrainz is slow, retrying…';
+      await sleepA([5000,15000,30000][attempt],signal);
+    }
+  }
+}
+const lucene=s=>s.replace(/[+\-&|!(){}\[\]^"~*?:\\\/]/g,' ').replace(/\s+/g,' ').trim();
+/* Title gate: a result is rejected unless its title resembles the file name. */
+const toks=s=>String(s||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').match(/[\p{L}\p{M}\p{N}]+/gu)||[];
+const scriptOf=s=>(/[a-z]/i.test(s)||!/[^\u0000-\u02FF\u1E00-\u1EFF\u2000-\u206F\s]/.test(s))?'latin':'other';
+function lev(a,b){
+  const m=a.length,n=b.length; if(!m) return n; if(!n) return m;
+  let p=Array.from({length:n+1},(_,j)=>j);
+  for(let i=1;i<=m;i++){let prev=p[0];p[0]=i;for(let j=1;j<=n;j++){const t=p[j];p[j]=Math.min(p[j]+1,p[j-1]+1,prev+(a[i-1]===b[j-1]?0:1));prev=t;}}
+  return p[n];
+}
+const tokEq=(a,b)=>{const k=Math.min(a.length,b.length);return a===b||(k>=5&&lev(a,b)<=1)||(k>=9&&lev(a,b)<=2);};
+function titleSim(q,t){
+  if(scriptOf(q)!==scriptOf(t)) return null;          // cannot compare Latin text with another script
+  const Q=toks(q),T=toks(t); if(!Q.length||!T.length) return 0;
+  const used=new Set(); let hit=0;
+  for(const x of T){const i=Q.findIndex((y,k)=>!used.has(k)&&tokEq(x,y)); if(i>=0){used.add(i);hit++;}}
+  const cT=hit/T.length,cQ=hit/Q.length,f1=cT+cQ?2*cT*cQ/(cT+cQ):0;
+  return (cT===1&&T.length>=2)?Math.max(f1,.85):f1;   // song title fully inside "movie - song" file names
+}
+let lastClosest='';
+function titleOk(title,refs){
+  const min=+$('strict').value; let best=null;
+  for(const r of refs){const v=titleSim(r,title); if(v!==null&&(best===null||v>best)) best=v;}
+  return best===null?min<=.4:best>=min;
+}
+const langOk=(r,l)=>!!l&&String(r['text-representation']?.language||'').toLowerCase().startsWith(l);
+function parseYears(s){
+  const m=String(s||'').trim().match(/^(\d{4})(?:\s*(?:-|–|—|to)\s*(\d{4}))?$/i);
+  if(!m) return null;
+  let a=+m[1],b=+(m[2]||m[1]); if(a>b) [a,b]=[b,a];
+  return {from:a,to:b,label:a===b?String(a):a+'-'+b};
+}
+const hasYear=(r,w)=>{const y=parseInt(String(r.date||'').slice(0,4));return y>=w.from&&y<=w.to;};
+async function search(q,signal,want,lang,refs){
+  const t=lucene(q); if(!t) return [];
+  // Pass 1: song title. Pass 2: filenames often mix movie + song, so also match release and artist.
+  const base=[`recording:(${t})`,`(recording:(${t}) OR release:(${t}) OR artist:(${t}))`];
+  let dq='';
+  if(want&&want.to-want.from<=10){dq='('+Array.from({length:want.to-want.from+1},(_,i)=>'date:'+(want.from+i)+'*').join(' OR ')+')';}
+  const queries=dq?[...base.map(x=>`${x} AND ${dq}`),...base]:base;
+  for(const query of queries){
+    const d=await mb(`recording?query=${encodeURIComponent(query)}&limit=${want?25:5}`,signal);
+    const cands=(d.recordings||[]).filter(r=>r.score>=70&&(r.releases||[]).length&&(!want||r.releases.some(x=>hasYear(x,want))));
+    const hits=cands.filter(r=>titleOk(r.title,refs));
+    cands.filter(r=>!hits.includes(r)).forEach(r=>{lastClosest=lastClosest||r.title;});
+    // Language is a preference, not a requirement: matching releases go first.
+    if(hits.length) return hits.sort((a,b)=>b.releases.some(x=>langOk(x,lang))-a.releases.some(x=>langOk(x,lang)));
+  }
+  return [];
+}
+function creditsFrom(rels){
+  rels=rels.filter(r=>r.artist);
+  const names=types=>[...new Set(rels.filter(r=>types.includes(r.type)).map(r=>r.artist.name))].join(', ');
+  return {composer:names(['composer'])||names(['writer']),lyricist:names(['lyricist'])};
+}
+// Fallback: search the song's Work directly when the recording has no linked work.
+async function workCredits(title,signal){
+  const t=lucene(title); if(!t) return {};
+  const d=await mb(`work?query=${encodeURIComponent('work:('+t+')')}&limit=3`,signal);
+  const w=(d.works||[]).find(x=>x.score>=85); if(!w) return {};
+  const full=await mb(`work/${w.id}?inc=artist-rels`,signal);
+  return creditsFrom(full.relations||[]);
+}
+const joinCredit=ac=>(ac||[]).map(a=>(a.name||a.artist?.name||'')+(a.joinphrase||'')).join('').trim();
+async function findMeta(q,signal,want,lang,refs){
+  lastClosest='';
+  const hits=await search(q,signal,want,lang,[q,...refs]); if(!hits.length) return null;
+  // Duplicates are common: try up to 3 matching recordings and keep the first one that has credits.
+  let best=null;
+  const full=lang?3:1;
+  for(const hit of hits.slice(0,lang?4:3)){
+    const rec=await mb(`recording/${hit.id}?inc=artist-credits+releases+work-rels+work-level-rels`,signal);
+    if(want&&!(rec.releases||[]).some(r=>hasYear(r,want))) continue;
+    const c=creditsFrom((rec.relations||[]).filter(r=>r.work).flatMap(r=>r.work.relations||[]));
+    const score=((rec.releases||[]).some(r=>langOk(r,lang))?2:0)+((c.composer||c.lyricist)?1:0);
+    const m={rec,hit,score,...c};
+    if(!best||score>best.score) best=m;
+    if(best.score>=full) break;
+  }
+  if(!best) return null;
+  const {rec,hit}=best; let {composer,lyricist}=best;
+  // Release the tags come from: official first, then earliest date.
+  const hitRel=Object.fromEntries((hit.releases||[]).map(r=>[r.id,r]));
+  const rank=r=>(langOk(r,lang)?0:1)*1e7+(r.status==='Official'?0:1)*1e5+(r.date?parseInt(r.date):9999);
+  const rels2=(rec.releases||[]).filter(r=>!want||hasYear(r,want)).sort((a,b)=>rank(a)-rank(b));
+  const rel=rels2[0]||{};
+  const relData=hitRel[rel.id]||{};
+  // Mapping: Track Artist -> Artist, Release title -> Album, Release date -> Year, Release Artist -> Composer (fallback).
+  const trackArtist=joinCredit(rec['artist-credit']);
+  const relArtistRaw=joinCredit(rel['artist-credit']||relData['artist-credit']);
+  const releaseArtist=/^various artists$/i.test(relArtistRaw)?'':relArtistRaw;
+  const year=String(rel.date||relData.date||rec['first-release-date']||'').slice(0,4);
+  if(!composer&&!lyricist){
+    const c=await workCredits(rec.title,signal); composer=c.composer||''; lyricist=c.lyricist||'';
+  }
+  let fromRelease=false;
+  if(!composer&&releaseArtist){composer=releaseArtist;fromRelease=true;}
+  let cover=null;
+  for(const r of rels2.slice(0,4)){
+    try{
+      const res=await fetch(`https://coverartarchive.org/release/${r.id}/front-500`,{signal});
+      if(res.ok){const blob=await res.blob();cover={buf:await blob.arrayBuffer(),url:URL.createObjectURL(blob)};break;}
+    }catch(e){ if(e.name==='AbortError') throw e; }
+  }
+  return {title:rec.title,artist:trackArtist,album:rel.title||relData.title||'',year,composer,lyricist,cover,fromRelease,langMatched:langOk(rel,lang)};
+}
+async function findOne(f,signal){
+  f.prev=f.status; f.status='searching'; f.msg=''; refresh(f);
+  const want=parseYears(f.yearHint||$('yearHint').value);
+  const lang=$('langHint').value.trim().toLowerCase().slice(0,3);
+  const m=await findMeta(f.title||f.query,signal,want,lang,[f.query]);
+  if(!m){
+    f.status='notfound';
+    f.msg=(want?`No confident match from ${want.label} on MusicBrainz.`:'No confident match on MusicBrainz.')+(lastClosest?` Closest result "${lastClosest}" did not match the file name.`:'');
+    if(f.prev==='matched'||f.prev==='written'){   // drop the earlier (wrong) match so it cannot be written
+      f.artist=f.album=f.year=f.composer=f.lyricist=''; f.coverBuf=null;
+      if(f.coverUrl){URL.revokeObjectURL(f.coverUrl);f.coverUrl='';}
+    }
+  }
+  else{
+    f.title=m.title||f.title; f.artist=m.artist||f.artist; f.album=m.album||f.album; f.year=m.year||f.year;
+    f.composer=m.composer||f.composer; f.lyricist=m.lyricist||f.lyricist;
+    if(m.cover){f.coverBuf=m.cover.buf;f.coverUrl=m.cover.url;}
+    f.status='matched';
+    f.noCredits=!m.composer&&!m.lyricist;
+    f.msg=f.noCredits?'MusicBrainz has no composer or lyricist listed for this song. You can type them in.':m.fromRelease?'Composer taken from the release artist.':'';
+    if(lang&&!m.langMatched) f.msg=(f.msg+` No release is marked as language "${lang}", so the best match was used.`).trim();
+  }
+  refresh(f);
+}
+window.one=id=>runQueue('Searching',[byId(id)],findOne);
+
+/* ---------- Playback (check a match by ear) ---------- */
+const aud=$('aud'); let playId=null, playUrl='';
+const isPlaying=id=>playId===id&&!aud.paused;
+function syncPlay(){
+  document.querySelectorAll('.pl').forEach(b=>{const on=isPlaying(b.dataset.id);b.innerHTML=on?ICON.pause:ICON.play;b.classList.toggle('on',on);});
+}
+['play','pause','ended'].forEach(ev=>aud.addEventListener(ev,syncPlay));
+aud.addEventListener('error',()=>toast("This browser can't play that file."));
+window.play=async id=>{
+  if(playId===id){ aud.paused?aud.play():aud.pause(); return; }
+  const f=byId(id);
+  try{
+    const file=f.handle?await f.handle.getFile():f.file;
+    if(playUrl) URL.revokeObjectURL(playUrl);
+    playUrl=URL.createObjectURL(file); playId=id; aud.src=playUrl;
+    $('plTitle').textContent=f.title||f.name;
+    $('plSub').textContent=[f.artist,f.album,f.year].filter(Boolean).join(' · ')||f.name;
+    $('player').hidden=false;
+    await aud.play();
+  }catch(e){ if(e.name!=='AbortError') toast("Can't play this file: "+e.message); }
+};
+
+/* ---------- Writing tags ---------- */
+async function writeOne(f){
+  if(f.ext!=='mp3'){f.status='skipped';f.msg='Only MP3 tagging is supported';return refresh(f);}
+  if(!(f.artist||f.album||f.year||f.composer||f.lyricist||f.coverBuf)){f.status='skipped';f.msg='Nothing to write. Find metadata first.';return refresh(f);}
+  f.prev=f.status; f.status='writing'; f.msg=''; refresh(f);
+  const file=f.handle?await f.handle.getFile():f.file;
+  const w=new ID3Writer(await file.arrayBuffer());
+  w.setFrame('TIT2',f.title||f.query);
+  const split=s=>s.split(/\s*[,;&]\s*/).filter(Boolean);
+  if(f.artist) w.setFrame('TPE1',split(f.artist));
+  if(f.album) w.setFrame('TALB',f.album);
+  if(/^\d{4}$/.test(f.year)) w.setFrame('TYER',+f.year);
+  if(f.composer) w.setFrame('TCOM',split(f.composer));
+  if(f.lyricist) w.setFrame('TEXT',split(f.lyricist));
+  if(f.coverBuf) w.setFrame('APIC',{type:3,data:f.coverBuf,description:'Cover',useUnicodeEncoding:false});
+  w.addTag();
+  const blob=w.getBlob();
+  if(f.handle){
+    const s=await f.handle.createWritable(); await s.write(blob); await s.close();
+  }else{
+    const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=f.name; a.click();
+  }
+  f.status='written'; refresh(f);
+}
+
+/* ---------- Queue with pause / stop ---------- */
+async function runQueue(label,items,worker){
+  if(run.active) return toast('A job is already running.');
+  if(!items.length) return toast('Select at least one track.');
+  run={active:true,paused:false,stop:false,ctrl:new AbortController()};
+  setBusy(true); let done=0;
+  for(const f of items){
+    while(run.paused&&!run.stop) await sleep(200);
+    if(run.stop) break;
+    $('dTitle').textContent=f.name; $('dSub').textContent=`${label} ${done+1} of ${items.length}`;
+    try{ await worker(f,run.ctrl.signal); }
+    catch(e){
+      if(run.stop||e.name==='AbortError'){f.status=f.prev||'pending';refresh(f);break;}
+      f.status='error'; f.msg=e.message; refresh(f);
+      toast(e.message+' Press Retry to continue.');
+      if(/busy|Could not reach/.test(e.message)) break;
+    }
+    $('fill').style.width=(++done/items.length*100)+'%';
+  }
+  const stopped=run.stop; run.active=false; setBusy(false);
+  toast(stopped?`Stopped after ${done} of ${items.length}.`:`${label} finished: ${done} track${done===1?'':'s'}.`);
+}
+function setBusy(on){
+  $('dock').classList.toggle('on',on); $('fill').style.width='0';
+  ['bFind','bWrite','bRetry','bRescan','bChange'].forEach(i=>$(i).disabled=on);
+  setPause(false);
+}
+function setPause(p){
+  run.paused=p;
+  $('bPause').innerHTML=p?ICON.play+'Resume':ICON.pause+'Pause';
+}
+$('bPause').onclick=()=>{setPause(!run.paused);$('dSub').textContent+=run.paused?' (paused)':'';};
+$('bStop').onclick=()=>{run.stop=true;run.paused=false;run.ctrl?.abort();};
+$('bRescan').onclick=rescan;
+$('bChange').onclick=pickFolder;
+$('bFind').onclick=()=>{
+  const todo=files.filter(f=>f.sel&&visible(f)&&($('redo').checked||!['matched','written'].includes(f.status)));
+  if(!todo.length) return toast('Selected tracks are already matched. Tick Include matched to search them again.');
+  runQueue('Searching',todo,findOne);
+};
+$('bRetry').onclick=()=>runQueue('Retrying',files.filter(f=>['error','notfound'].includes(f.status)),findOne);
+$('bWrite').onclick=()=>{
+  if(canWrite&&!rootHandle) toast('Reopen the folder with Choose folder to allow writing.');
+  const todo=files.filter(writable);
+  if(!todo.length) return toast('Nothing to write. Only selected, matched tracks in the current view are written.');
+  runQueue('Writing',todo,writeOne);
+};
+
+/* ---------- Toast ---------- */
+let tt;function toast(m){const t=$('toast');t.textContent=m;t.classList.add('on');clearTimeout(tt);tt=setTimeout(()=>t.classList.remove('on'),4000);}
+</script>
+</body>
+</html>
